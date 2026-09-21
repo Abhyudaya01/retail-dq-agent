@@ -1,0 +1,2 @@
+/opt/homebrew/bin/uv run python -m src.agent.graph run --table-name sales_dirty --db "data/retail.duckdb" --output-dir outputs --export-powerbi --ground-truth "data/ground_truth.json"
+Wrote 8 surfaced and 2 rejected proposals to outputs; run_id=d8daa851-674c-4132-b461-5f32e3b1eb9a

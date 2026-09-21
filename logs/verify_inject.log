@@ -1,0 +1,53 @@
+/opt/homebrew/bin/uv run python -m src.injection --load-raw --raw-dir "data/raw" --db "data/retail.duckdb" --ground-truth "data/ground_truth.json"
+Wrote 305300 rows to sales_dirty and data/ground_truth.json
+
+-- Targeted check: I1_null_units
+SELECT count(*) FROM sales_dirty d JOIN sales_clean c ON d.item_id = c.item_id
+    AND d.store_id = c.store_id AND substr(d.date, 1, 10) = CAST(c.date AS VARCHAR)
+        WHERE d.units IS NULL AND c.units IS NOT NULL;
+-- I1_null_units: detectable rows=9161
+
+-- Targeted check: I2_duplicate_rows
+SELECT count(*) - (SELECT count(*) FROM sales_clean)
+        FROM sales_dirty HAVING count(*) - (SELECT count(*) FROM sales_clean) = 500
+        AND count(*) - (SELECT count(*) FROM (SELECT DISTINCT * FROM sales_dirty)) >= 500;
+-- I2_duplicate_rows: detectable rows=500
+
+-- Targeted check: I3_schema_drift_price
+SELECT count(*) FROM sales_dirty d JOIN sales_clean c ON d.item_id = c.item_id
+    AND d.store_id = c.store_id AND substr(d.date, 1, 10) = CAST(c.date AS VARCHAR)
+        WHERE c.date > (SELECT median(CAST(date AS TIMESTAMP)) FROM sales_clean)
+        AND c.sell_price IS NOT NULL
+        AND d.sell_price IS NULL AND d.price_usd IS NOT NULL
+        AND (abs(d.price_usd - c.sell_price) < 0.000001
+             OR abs(d.price_usd - c.sell_price * 100) < 0.000001);
+-- I3_schema_drift_price: detectable rows=152645
+
+-- Targeted check: I4_out_of_range_price
+SELECT count(*) FROM sales_dirty d JOIN sales_clean c ON d.item_id = c.item_id
+    AND d.store_id = c.store_id AND substr(d.date, 1, 10) = CAST(c.date AS VARCHAR)
+        WHERE c.sell_price > 0
+        AND abs(coalesce(d.sell_price, d.price_usd) - c.sell_price * 100) < 0.000001;
+-- I4_out_of_range_price: detectable rows=1525
+
+-- Targeted check: I5_negative_units
+SELECT count(*) FROM sales_dirty d JOIN sales_clean c ON d.item_id = c.item_id
+    AND d.store_id = c.store_id AND substr(d.date, 1, 10) = CAST(c.date AS VARCHAR)
+        WHERE c.units > 0 AND d.units = -c.units;
+-- I5_negative_units: detectable rows=915
+
+-- Targeted check: I6_timezone_shift
+SELECT count(*) FROM sales_dirty d JOIN sales_clean c ON d.item_id = c.item_id
+    AND d.store_id = c.store_id AND substr(d.date, 1, 10) = CAST(c.date AS VARCHAR)
+        WHERE d.store_id = 'TX_1' AND ends_with(d.date, 'T06:00:00Z')
+        AND TRY_CAST(d.date AS TIMESTAMP) = CAST(c.date AS TIMESTAMP) + INTERVAL '6 hours'
+        HAVING (SELECT count(*) FROM sales_dirty WHERE store_id <> 'TX_1'
+                AND regexp_full_match(date, '[0-9]{4}-[0-9]{2}-[0-9]{2}')) > 0;
+-- I6_timezone_shift: detectable rows=101750
+
+-- Targeted check: I7_category_typos
+SELECT count(*) FROM sales_dirty d JOIN sales_clean c ON d.item_id = c.item_id
+    AND d.store_id = c.store_id AND substr(d.date, 1, 10) = CAST(c.date AS VARCHAR)
+        WHERE c.cat_id = 'HOBBIES' AND d.cat_id IN ('Hobbies', 'HOBBIES ', 'HOBIES')
+        HAVING count(DISTINCT d.cat_id) = 3;
+-- I7_category_typos: detectable rows=3056

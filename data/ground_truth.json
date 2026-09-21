@@ -1,0 +1,87 @@
+{
+  "seed": 42,
+  "count_basis": "injected source rows before duplication",
+  "issues": [
+    {
+      "id": "I1_null_units",
+      "table": "sales_dirty",
+      "columns": [
+        "units"
+      ],
+      "detection_signal": "null_rate > 0.005",
+      "affected_row_estimate": 9144,
+      "recommended_action": "impute",
+      "rationale": "Missing units distort sales totals."
+    },
+    {
+      "id": "I2_duplicate_rows",
+      "table": "sales_dirty",
+      "columns": [
+        "item_id",
+        "store_id",
+        "date"
+      ],
+      "detection_signal": "duplicate natural keys or complete rows",
+      "affected_row_estimate": 500,
+      "recommended_action": "drop",
+      "rationale": "Repeated records double-count sales."
+    },
+    {
+      "id": "I3_schema_drift_price",
+      "table": "sales_dirty",
+      "columns": [
+        "sell_price",
+        "price_usd"
+      ],
+      "detection_signal": "sell_price null and price_usd populated after 2015-09-11T12:00:00 (source median date)",
+      "affected_row_estimate": 152400,
+      "recommended_action": "schema_fix",
+      "rationale": "Consolidate migrated price columns (sell_price and price_usd) into a single canonical column; downstream consumers should not have to know the cutoff date."
+    },
+    {
+      "id": "I4_out_of_range_price",
+      "table": "sales_dirty",
+      "columns": [
+        "sell_price",
+        "price_usd"
+      ],
+      "detection_signal": "price approximately 100x item/store baseline",
+      "affected_row_estimate": 1524,
+      "recommended_action": "investigate",
+      "rationale": "Extreme prices simulate data-entry errors."
+    },
+    {
+      "id": "I5_negative_units",
+      "table": "sales_dirty",
+      "columns": [
+        "units"
+      ],
+      "detection_signal": "units < 0",
+      "affected_row_estimate": 914,
+      "recommended_action": "investigate",
+      "rationale": "Negative sales require source validation."
+    },
+    {
+      "id": "I6_timezone_shift",
+      "table": "sales_dirty",
+      "columns": [
+        "date"
+      ],
+      "detection_signal": "TX_1 dates end in T06:00:00Z; others are naive",
+      "affected_row_estimate": 101600,
+      "recommended_action": "normalize",
+      "rationale": "TX_1 dates carry UTC+6 suffixes while other stores are naive; normalize to a single timezone convention before any date-based join."
+    },
+    {
+      "id": "I7_category_typos",
+      "table": "sales_dirty",
+      "columns": [
+        "cat_id"
+      ],
+      "detection_signal": "cat_id in ['Hobbies', 'HOBBIES ', 'HOBIES']",
+      "affected_row_estimate": 3048,
+      "recommended_action": "normalize",
+      "rationale": "Map noncanonical labels ('Hobbies', 'HOBBIES ', 'HOBIES') to the canonical uppercase form; this is label correction, not imputation."
+    }
+  ]
+}

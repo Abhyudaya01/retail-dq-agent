@@ -77,7 +77,7 @@ generated block records any missed injected issues.
 | Injected issue | Detected | Action correct | Critic passed | Proposed / expected action |
 | --- | --- | --- | --- | --- |
 | I1_null_units | yes | no | yes | investigate / impute |
-| I2_duplicate_rows | yes | no | yes | investigate / drop |
+| I2_duplicate_rows | yes | no | no | investigate / drop |
 | I3_schema_drift_price | yes | yes | no | schema_fix / schema_fix |
 | I4_out_of_range_price | yes | yes | yes | investigate / investigate |
 | I5_negative_units | yes | yes | yes | investigate / investigate |

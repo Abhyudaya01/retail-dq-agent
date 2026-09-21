@@ -1,0 +1,14 @@
+/opt/homebrew/bin/uv run python -m eval.eval --predictions "outputs/proposals.parquet" --ground-truth "data/ground_truth.json" --report "eval/report.md"
+                              Issue-level evaluation                               
+┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Issue                 ┃ Detected ┃ Action correct ┃ Critic passed ┃ Action      ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ I1_null_units         │ True     │ False          │ True          │ investigate │
+│ I2_duplicate_rows     │ True     │ False          │ False         │ investigate │
+│ I3_schema_drift_price │ True     │ True           │ False         │ schema_fix  │
+│ I4_out_of_range_price │ True     │ True           │ True          │ investigate │
+│ I5_negative_units     │ True     │ True           │ True          │ investigate │
+│ I6_timezone_shift     │ True     │ False          │ True          │ investigate │
+│ I7_category_typos     │ True     │ True           │ True          │ normalize   │
+└───────────────────────┴──────────┴────────────────┴───────────────┴─────────────┘
+Recall: 1.0; action precision: 0.5714285714285714
